@@ -90,8 +90,8 @@ public class NGSKPhotoCaptureActivity extends AppCompatActivity implements Activ
             str_proposal_id = "Prop_ID";
         proposal_id.setText(getString(R.string.work_id)+":"+str_proposal_id);
         mTextViewWorkName.setText(getString(R.string.work_name)+":"+workName);
-     //   line3 = mTextViewWorkName.getText().toString();
-        line3 = mTextViewWorkName.getText().toString()+" my text\nNext line is very long text that does not definitely fit in a single line line is very long text that does not definitely fit in a single line  on an android device. This will show you how!";
+        line3 = mTextViewWorkName.getText().toString();
+     //   line3 = mTextViewWorkName.getText().toString()+" my text\nNext line is very long text that does not definitely fit in a single line line is very long text that does not definitely fit in a single line  on an android device. This will show you how!";
 
         get_location_data();
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
