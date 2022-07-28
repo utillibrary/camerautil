@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -116,7 +117,13 @@ public class PhotoCaptureActivity extends AppCompatActivity implements ActivityC
             public void onClick(View view) {
                 if(startstoppreview.isChecked() && ccv2WithPreview != null) {
                    // mFile =  getOutputMediaFile();
-                    ccv2WithPreview.takePicture(getBitmapFromView(frameLayoutView),mFile);
+                    boolean isLandscape = false;
+                    if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                        isLandscape = true;
+                    } else {
+                        isLandscape = false;
+                    }
+                    ccv2WithPreview.takePicture(getBitmapFromView(frameLayoutView),mFile, "", "", "", isLandscape);
                 } else if(ccv2WithoutPreview != null){
                     ccv2WithoutPreview.openCamera();
                     try { Thread.sleep(20); } catch (InterruptedException e) {}

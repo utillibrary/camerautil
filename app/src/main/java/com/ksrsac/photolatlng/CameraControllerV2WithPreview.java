@@ -4,15 +4,15 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.content.res.Resources;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -28,20 +28,16 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ExifInterface;
 import android.media.Image;
 import android.media.ImageReader;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.provider.MediaStore;
+import android.text.TextPaint;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
-import android.util.TypedValue;
 import android.view.Surface;
 import android.view.TextureView;
-import android.view.View;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -176,7 +172,7 @@ public class CameraControllerV2WithPreview {
         public void onImageAvailable(ImageReader reader) {
             Log.d(TAG, "ImageAvailable");
             photoTakenCompleted = (PhotoTakenCompleted)activity;
-            backgroundHandler.post(new ImageSaver(reader.acquireNextImage(), file, LocationView));
+            backgroundHandler.post(new ImageSaver(reader.acquireNextImage(), file, LocationView, line1, line2, line3, isLandscape));
         }
 
     };
@@ -511,15 +507,20 @@ public class CameraControllerV2WithPreview {
         textureView.setTransform(matrix);
     }
     Bitmap LocationView;
+    String line1="", line2="", line3="";
+    boolean isLandscape = false;
 
-
-    public void takePicture(Bitmap bitmapFromView, File outputMediaFile) {
+    public void takePicture(Bitmap bitmapFromView, File outputMediaFile, String lin1, String lin2, String lin3, boolean isLandscap) {
         try {
             if(outputMediaFile!=null)
             {
                 file = outputMediaFile;
             }
             LocationView = bitmapFromView;
+            line1 = lin1;
+            line2 = lin2;
+            line3 = lin3;
+            isLandscape = isLandscap;
             // This is how to tell the camera to lock focus.
             mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
             // Tell #mCaptureCallback to wait for the lock.
@@ -614,12 +615,17 @@ public class CameraControllerV2WithPreview {
         private final File mFile;
         private final Bitmap locationView;
         private Bitmap imag;
+        private String line1, line2, line3;
+        private boolean isLandSCape;
 
-        public ImageSaver(Image image, File file, Bitmap location) {
+        public ImageSaver(Image image, File file, Bitmap location, String lin1, String lin2, String lin3, boolean isLandscap) {
             mImage = image;
             mFile = file;
             locationView = location;
-
+            line1 = lin1;
+            line2 = lin2;
+            line3 = lin3;
+            isLandSCape = isLandscap;
         }
 
         @Override
@@ -630,7 +636,9 @@ public class CameraControllerV2WithPreview {
             FileOutputStream output = null;
             try {
                 output = new FileOutputStream(mFile);
-                output.write(createImageInImageCenter(locationView, bytes, mFile));
+                //    output.write(createImageInImageCenter(locationView, bytes, mFile));
+                output.write(createImageInImageCenterWithText(bytes, mFile));
+
                 compressImage(null, mFile);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -647,27 +655,160 @@ public class CameraControllerV2WithPreview {
             }
 
         }
-        public byte[] createImageInImageCenter(Bitmap locationView, byte[] bytes, File file)
-        {
-            Bitmap backgroundBitmap  = BitmapFactory.decodeByteArray(bytes , 0, bytes .length);
+
+        public byte[] createImageInImageCenter(Bitmap locationView, byte[] bytes, File file) {
+            Bitmap backgroundBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
             Matrix mat = new Matrix();
             mat.postRotate(90);  // angle is the desired angle you wish to rotate
             backgroundBitmap = Bitmap.createBitmap(backgroundBitmap, 0, 0, backgroundBitmap.getWidth(), backgroundBitmap.getHeight(), mat, true);
-            Bitmap resultBitmap = Bitmap.createBitmap(backgroundBitmap.getWidth(),backgroundBitmap.getHeight(), backgroundBitmap.getConfig());
+            Bitmap resultBitmap = Bitmap.createBitmap(backgroundBitmap.getWidth(), backgroundBitmap.getHeight(), backgroundBitmap.getConfig());
             Canvas canvas = new Canvas(resultBitmap);
             canvas.drawBitmap(backgroundBitmap, new Matrix(), null);
             locationView = Bitmap.createScaledBitmap(locationView, backgroundBitmap.getWidth(), locationView.getHeight(), false);
-            canvas.drawBitmap(locationView, 0, backgroundBitmap.getHeight()-locationView.getHeight(), new Paint());
-           // canvas.drawBitmap(Bitmap.createScaledBitmap(locationView, backgroundBitmap.getWidth(), locationView.getHeight(), false), 0, backgroundBitmap.getHeight()-locationView.getHeight(), new Paint());
+            canvas.drawBitmap(locationView, 0, backgroundBitmap.getHeight() - locationView.getHeight(), new Paint());
+            // canvas.drawBitmap(Bitmap.createScaledBitmap(locationView, backgroundBitmap.getWidth(), locationView.getHeight(), false), 0, backgroundBitmap.getHeight()-locationView.getHeight(), new Paint());
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
-           // resultBitmap = compressImage(resultBitmap, file);
+            // resultBitmap = compressImage(resultBitmap, file);
             resultBitmap.compress(Bitmap.CompressFormat.PNG, 30, stream);
             byte[] byteArray = stream.toByteArray();
             return byteArray;
+        }
+
+
+        public byte[] createImageInImageCenterWithText(byte[] bytes, File file) {
+            Bitmap newBitmap = null;
+            Bitmap backgroundBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            Matrix mat = new Matrix();
+            Log.d(TAG, "createImageInImageCenterWithText: "+isLandSCape);
+            if(!isLandSCape)
+            {
+                mat.postRotate(90);  // angle is the desired angle you wish to rotate
+            }
+            else {
+                mat.postRotate(270);  // angle is the desired angle you wish to rotate
+            }
+            backgroundBitmap = Bitmap.createBitmap(backgroundBitmap, 0, 0, backgroundBitmap.getWidth(), backgroundBitmap.getHeight(), mat, true);
+
+            Bitmap.Config config = backgroundBitmap.getConfig();
+            if (config == null) {
+                config = Bitmap.Config.ARGB_8888;
+            }
+            newBitmap = Bitmap.createBitmap(backgroundBitmap.getWidth(), backgroundBitmap.getHeight(), config);
+            Canvas newCanvas = new Canvas(newBitmap);
+            newCanvas.drawBitmap(backgroundBitmap, 0, 0, null);
+
+            Paint paintText = new Paint(Paint.ANTI_ALIAS_FLAG);
+            paintText.setColor(Color.WHITE);
+            paintText.setTextSize(100);
+            paintText.setStyle(Paint.Style.FILL);
+
+            TextPaint mTextPaint=new TextPaint();
+            String text = "my text\nNext line is very long text that does not definitely fit in a single line on an android device. This will show you how!";
+
+            Paint mRectBoxPaint = new Paint();
+            mRectBoxPaint.setColor(Color.WHITE);
+            mRectBoxPaint.setStrokeWidth(100);
+            //mRectBoxPaint.setStyle(Paint.Style.STROKE);
+
+           // canvas.drawRect(Rect(startX, topY, endX, bottomY), paint)
+
+            Rect rectText = new Rect();
+            paintText.getTextBounds(line1, 0, line1.length(), rectText);
+            int heightOfText1 = rectText.height();
+
+            float width = mRectBoxPaint.measureText(line1, 0, line1.length());
+            Log.d(TAG, "createImageInImageCenterWithText: text width :"+width+"no of char:"+(width/line1.length())+" ");
+             width = mRectBoxPaint.measureText(line2, 0, line2.length());
+            Log.d(TAG, "createImageInImageCenterWithText: text width :"+width+"no of char:"+(width/line2.length())+" ");
+
+            width = mRectBoxPaint.measureText(line3, 0, line3.length());
+            Log.d(TAG, "createImageInImageCenterWithText: text width :"+width+"no of char:"+(width/line3.length())+" ");
+
+
+            Log.d(TAG, "createImageInImageCenterWithText: height:"+newCanvas.getWidth()+" "+newCanvas.getHeight()+" bg image:"+backgroundBitmap.getWidth()+" "+backgroundBitmap.getHeight()+" text length:"+rectText.width());
+            Log.d(TAG, "createImageInImageCenterWithText: character : "+rectText.width()/line1.length());
+            Log.d(TAG, "createImageInImageCenterWithText: character : "+rectText.width()/line2.length());
+            Log.d(TAG, "createImageInImageCenterWithText: character : "+rectText.width()/line3.length());
+
+            int characterSize = rectText.width()/line1.length();
+
+        //    int characterSize = newCanvas.getWidth()/( (((int)width/line2.length()))*10);
+
+            String str[] = split(line3, newCanvas.getWidth()/characterSize);
+
+            int nofLines = str.length+2;
+            int top = newCanvas.getHeight()-heightOfText1*nofLines;
+
+            newCanvas.drawRect(0,  top, newCanvas.getWidth(), top+heightOfText1*nofLines, mRectBoxPaint);
+
+            paintText.setColor(Color.BLACK);
+
+            newCanvas.drawText(line1, 0, backgroundBitmap.getHeight()-heightOfText1*(nofLines-1), paintText);
+
+            //second line
+            paintText.getTextBounds(line2, 0, line2.length(), rectText);
+            newCanvas.drawText(line2, 0, backgroundBitmap.getHeight()-heightOfText1*(nofLines-2), paintText);
+
+            //third line
+            for(int i = 0; i<str.length; i++){
+                newCanvas.drawText(str[i], 0, backgroundBitmap.getHeight()-heightOfText1*(nofLines-(i+1+2)), paintText);
+            }
+
+            paintText.getTextBounds(line3, 0, line3.length(), rectText);
+          //  newCanvas.drawText(line3, 0, backgroundBitmap.getHeight()-heightOfText1, paintText);
+
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            // resultBitmap = compressImage(resultBitmap, file);
+            newBitmap.compress(Bitmap.CompressFormat.PNG, 30, stream);
+
+
+            byte[] byteArray = stream.toByteArray();
+            return byteArray;
+        }
+
+        public String[] split(String src, int len) {
+            String[] result = new String[(int)Math.ceil((double)src.length()/(double)len)];
+            for (int i=0; i<result.length; i++)
+                result[i] = src.substring(i*len, Math.min(src.length(), (i+1)*len));
+            return result;
+        }
+
+        public static void drawMultiLineText(Canvas canvas, String text, int x,
+                                             int y, Paint paint, float lineHeight) {
+            String[] lines = text.split("\n");
+            for (String line : lines) {
+                canvas.drawText(line, x, y, paint);
+                y += (-paint.ascent() + paint.descent()) * lineHeight;
+            }
 
         }
 
+        public static Bitmap waterMark(Bitmap src, String watermark) {
+            //get source image width and height
+            int w = src.getWidth();
+            int h = src.getHeight();
+
+            Bitmap result = Bitmap.createBitmap(w, h, src.getConfig());
+            Canvas canvas = new Canvas(result);
+            canvas.drawBitmap(src, 0, 0, null);
+            Paint paint = new Paint();
+            Paint.FontMetrics fm = new Paint.FontMetrics();
+            paint.setColor(Color.WHITE);
+            paint.getFontMetrics(fm);
+            int margin = 5;
+            canvas.drawRect(50 - margin, 50 + fm.top - margin,
+                    50 + paint.measureText(watermark) + margin, 50 + fm.bottom
+                            + margin, paint);
+
+            paint.setColor(Color.RED);
+
+            canvas.drawText(watermark, 50, 50, paint);
+            return result;
+        }
     }
+
+
+
 
     public static String compressImage(Context context, File imageUri) {
         try {

@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -22,6 +23,8 @@ import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.Display;
+import android.view.Surface;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -54,6 +57,7 @@ public class NGSKPhotoCaptureActivity extends AppCompatActivity implements Activ
     LocationManager locationManager;
     String latitude, longitude;
     private TextView latText, timeText, mTextViewWorkName, proposal_id ;
+    private String line1, line2, line3;
     GPSTracker gpsTracker;
     int height, width;
     private File mFile;
@@ -86,6 +90,9 @@ public class NGSKPhotoCaptureActivity extends AppCompatActivity implements Activ
             str_proposal_id = "Prop_ID";
         proposal_id.setText(getString(R.string.work_id)+":"+str_proposal_id);
         mTextViewWorkName.setText(getString(R.string.work_name)+":"+workName);
+     //   line3 = mTextViewWorkName.getText().toString();
+        line3 = mTextViewWorkName.getText().toString()+" my text\nNext line is very long text that does not definitely fit in a single line line is very long text that does not definitely fit in a single line  on an android device. This will show you how!";
+
         get_location_data();
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         List<Sensor> sensorList  =
@@ -147,7 +154,16 @@ public class NGSKPhotoCaptureActivity extends AppCompatActivity implements Activ
             public void onClick(View view) {
                 if(startstoppreview.isChecked() && ccv2WithPreview != null) {
                    // mFile =  getOutputMediaFile();
-                    ccv2WithPreview.takePicture(getBitmapFromView(frameLayoutView),mFile);
+                   boolean isLandscape = false;
+                  //  if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+
+                        if (getScreenOrientation() == Configuration.ORIENTATION_LANDSCAPE) {
+                        isLandscape = true;
+                    } else {
+                       isLandscape = false;
+                    }
+                    Log.d(TAG, "isLandscape: "+isLandscape);
+                    ccv2WithPreview.takePicture(getBitmapFromView(frameLayoutView),mFile, line1, line2, line3, isLandscape);
                 } else if(ccv2WithoutPreview != null){
                     ccv2WithoutPreview.openCamera();
                     try {
@@ -163,6 +179,34 @@ public class NGSKPhotoCaptureActivity extends AppCompatActivity implements Activ
         });
 
         getPermissions();
+    }
+
+    public int getScreenOrientation()
+    {
+        int rotation = getWindowManager().getDefaultDisplay()
+                .getRotation();
+        Log.d(TAG, "getScreenOrientation: "+ Surface.ROTATION_0);
+        Display getOrient = getWindowManager().getDefaultDisplay();
+        int degrees = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0: degrees = 0; break;
+            case Surface.ROTATION_90: degrees = 90; break;
+            case Surface.ROTATION_180: degrees = 180; break;
+            case Surface.ROTATION_270: degrees = 270; break;
+        }
+        Log.d(TAG, "getScreenOrientation: "+degrees);
+
+        int orientation = Configuration.ORIENTATION_UNDEFINED;
+        if(getOrient.getWidth()==getOrient.getHeight()){
+            orientation = Configuration.ORIENTATION_SQUARE;
+        } else{
+            if(getOrient.getWidth() < getOrient.getHeight()){
+                orientation = Configuration.ORIENTATION_PORTRAIT;
+            }else {
+                orientation = Configuration.ORIENTATION_LANDSCAPE;
+            }
+        }
+        return orientation;
     }
 
 
@@ -231,6 +275,8 @@ public class NGSKPhotoCaptureActivity extends AppCompatActivity implements Activ
         Date date = new Date();
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
         timeText.setText("Date & Time:"+ sdf.format(date) );
+        line1 = proposal_id.getText().toString()+", Lat:"+df.format(locationGPS.getLatitude())+" Long:"+df.format(locationGPS.getLongitude());
+        line2 = "Date & Time:"+ sdf.format(date);
     }
     @Override
     public void onSensorChanged(SensorEvent event) {
@@ -433,6 +479,19 @@ public class NGSKPhotoCaptureActivity extends AppCompatActivity implements Activ
                         AppUtils.Constants.MY_PERMISSIONS_REQUEST_LOCATION);
             }
 
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // Checks the orientation of the screen
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+          //  Toast.makeText(this, "landscape", Toast.LENGTH_SHORT).show();
+           // textureView.setRotation(90);
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT){
+           // Toast.makeText(this, "portrait", Toast.LENGTH_SHORT).show();
+           // textureView.setRotation(0);
         }
     }
 }
