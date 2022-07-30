@@ -1,6 +1,14 @@
 package com.util.photolatlng;
 
+import android.util.Log;
 import android.widget.Button;
+
+import com.cocoahero.android.geojson.Feature;
+import com.cocoahero.android.geojson.Point;
+import com.cocoahero.android.geojson.Ring;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -419,6 +427,60 @@ public  class AppUtils {
             longitude =Math.atan((Math.exp((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2))))*(1-0.006739496742*Math.pow((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)))),2)/2*Math.pow(Math.cos(north/6366197.724/0.9996),2)/3))-Math.exp(-(Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2))))*(1-0.006739496742*Math.pow((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)))),2)/2*Math.pow(Math.cos(north/6366197.724/0.9996),2)/3)))/2/Math.cos((north-0.9996*6399593.625*( north/6366197.724/0.9996-0.006739496742*3/4*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.pow(0.006739496742*3/4,2)*5/3*(3*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.sin(2* north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/4-Math.pow(0.006739496742*3/4,3)*35/27*(5*(3*(north/6366197.724/0.9996+Math.sin(2*north/6366197.724/0.9996)/2)+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/4+Math.sin(2*north/6366197.724/0.9996)*Math.pow(Math.cos(north/6366197.724/0.9996),2)*Math.pow(Math.cos(north/6366197.724/0.9996),2))/3)) / (0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2))))*(1-0.006739496742*Math.pow((Easting-500000)/(0.9996*6399593.625/Math.sqrt((1+0.006739496742*Math.pow(Math.cos(north/6366197.724/0.9996),2)))),2)/2*Math.pow(Math.cos(north/6366197.724/0.9996),2))+north/6366197.724/0.9996))*180/Math.PI+Zone*6-183;
             longitude=Math.round(longitude*10000000);
             longitude=longitude/10000000;
+        }
+    }
+
+    public static JSONObject getGeoJsonFromPoint(double lat, double lon, String id)
+    {
+        // Create geometry
+        Point point = new Point(lat, lon);
+        double pos[][] = {
+                {10.3,12.5},{2.3,78.25}
+        };
+        Ring ring = new Ring(pos);
+        com.cocoahero.android.geojson.Polygon polygon = new com.cocoahero.android.geojson.Polygon(ring);
+
+// Create feature with geometry
+        Feature feature = new Feature(point);
+
+// Set optional feature identifier
+        feature.setIdentifier(id);
+
+// Set optional feature properties
+        feature.setProperties(new JSONObject());
+
+// Convert to formatted JSONObject
+        try {
+             JSONObject geoJSON = feature.toJSON();
+             return geoJSON;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static JSONObject getGeoJsonFromPolygon(double pos[][], String id)
+    {
+        // Create geometry
+        Ring ring = new Ring(pos);
+        com.cocoahero.android.geojson.Polygon polygon = new com.cocoahero.android.geojson.Polygon(ring);
+
+// Create feature with geometry
+        Feature feature = new Feature(polygon);
+
+// Set optional feature identifier
+        feature.setIdentifier(id);
+
+// Set optional feature properties
+        feature.setProperties(new JSONObject());
+
+// Convert to formatted JSONObject
+        try {
+            JSONObject geoJSON = feature.toJSON();
+            return geoJSON;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }
